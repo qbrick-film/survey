@@ -1,0 +1,11 @@
+# 実スキャンとそこから作ったテスト画像（回答者の手書きが写るので、リポジトリには入れない）
+tests/img/
+*.pgm
+tests/*.png
+
+# Python
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store

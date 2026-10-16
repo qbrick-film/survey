@@ -1,0 +1,52 @@
+# 読み取りツールを GitHub Pages に公開する。
+# - main に push すると、組み立て → コミット済みの dist/ と一致するか確認 → 公開まで行う
+# - Actions タブの「Run workflow」からも実行できる
+#
+# セキュリティ:
+# - 権限は最小限。組み立ては読み取りだけで、GitHub Pages への公開は pages だけに渡す
+# - 外部の Action はタグではなくコミットのハッシュで固定する（タグは付け替えられるため）。更新するときはハッシュごと差し替える
+name: pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4.4.0
+        with:
+          persist-credentials: false
+      - run: python3 build.py
+      - name: build.py を実行し忘れていないか確認（組み立て直した結果がコミット済みの dist/ と同じか）
+        run: git diff --exit-code -- dist/
+      - name: 公開するファイルをまとめる（ツール本体と用紙PDF）
+        run: |
+          mkdir _site
+          cp dist/index.html "dist/紫熊祭2026_上映アンケート.pdf" _site/
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9  # v5.0.0
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write     # GitHub Pages への公開に必要（この工程だけ）
+      id-token: write  # 公開先に、このワークフローからの依頼だと証明するために必要
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346  # v5.0.1

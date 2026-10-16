@@ -1,0 +1,486 @@
+<title>紫熊祭2026 アンケート 読み取りツール</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+/* 用紙と同じ「白い紙・黒いマーク・赤い要確認」の世界観。1カラムの作業手順 */
+:root{
+  --bg:#F1F2F5; --paper:#FFFFFF; --ink:#1A2130; --sub:#5A6474; --line:#D5DAE1;
+  --mark:#B8323C; --mark-soft:#FAE6E7; --ok:#1E7552; --ok-soft:#E2F2EA; --bar:#2B3A52; --chip:#F6F7F9;
+  --font:"BIZ UDPGothic","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12161C; --paper:#1A2028; --ink:#E6EAF0; --sub:#9AA4B3; --line:#2E3742;
+  --mark:#EE6670; --mark-soft:#3A1F23; --ok:#5CC497; --ok-soft:#163026; --bar:#8FA7CC; --chip:#222A34; color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#12161C; --paper:#1A2028; --ink:#E6EAF0; --sub:#9AA4B3; --line:#2E3742;
+  --mark:#EE6670; --mark-soft:#3A1F23; --ok:#5CC497; --ok-soft:#163026; --bar:#8FA7CC; --chip:#222A34; color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);line-height:1.7;font-size:15px}
+main{max-width:940px;margin:0 auto;padding-block:28px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;margin-bottom:24px}
+.logo{display:grid;grid-template-columns:repeat(3,12px);gap:4px}
+.logo i{width:12px;height:12px;border:1.5px solid var(--sub);border-radius:2px}
+.logo i.f{background:var(--mark);border-color:var(--mark)}
+h1{font-size:1.45rem;margin:0;line-height:1.3;text-wrap:balance}
+header p{margin:2px 0 0;color:var(--sub);font-size:.9rem}
+section{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:22px 22px 24px;margin-bottom:18px}
+h2{font-size:1.1rem;margin:0 0 4px;display:flex;gap:10px;align-items:baseline}
+h2 .n{font-size:.85rem;color:var(--paper);background:var(--ink);border-radius:4px;padding:0 7px}
+h3{font-size:1rem;margin:22px 0 4px}
+.lead{color:var(--sub);margin:0 0 14px;font-size:.92rem}
+.drop{display:block;border:2px dashed var(--line);border-radius:8px;padding:30px 16px;text-align:center;cursor:pointer;transition:border-color .15s}
+.drop:hover,.drop.on{border-color:var(--mark)}
+.drop strong{display:block;font-size:1.05rem}
+.drop span{color:var(--sub);font-size:.88rem}
+input[type=file]{display:none}
+button{font:inherit;border:1px solid var(--ink);background:var(--ink);color:var(--paper);border-radius:6px;padding:8px 16px;cursor:pointer}
+button.ghost{background:transparent;color:var(--ink)}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible,.drop:focus-visible,select:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+.prog{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:14px}
+.prog div{height:100%;width:0;background:var(--mark);transition:width .2s}
+.status{margin-top:8px;font-size:.9rem;color:var(--sub)}
+.stats{display:flex;gap:28px;flex-wrap:wrap;margin:6px 0 16px}
+.stats div{font-size:.85rem;color:var(--sub)}
+.stats b{display:block;font-size:1.6rem;color:var(--ink);line-height:1.2;font-variant-numeric:tabular-nums}
+.stats .warn b{color:var(--mark)}
+.filter{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 6px}
+.filter button{padding:4px 12px;font-size:.85rem}
+.q{margin:18px 0 0}
+.q h4{font-size:.95rem;margin:0 0 6px}
+.q .note{font-weight:400;color:var(--sub);font-size:.82rem;margin-left:6px}
+.row{display:grid;grid-template-columns:minmax(100px,170px) 1fr 44px;gap:10px;align-items:center;font-size:.88rem;margin:3px 0}
+.track{height:14px;background:var(--bg);border-radius:3px;overflow:hidden}
+.track div{height:100%;background:var(--bar)}
+.row .c{text-align:right;font-variant-numeric:tabular-nums}
+.row.sub{color:var(--sub)}
+.item{border-top:1px solid var(--line);padding:14px 0}
+.item:first-child{border-top:0}
+.meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:.9rem;margin-bottom:6px}
+.tag{font-size:.78rem;padding:1px 8px;border-radius:10px;background:var(--mark-soft);color:var(--mark)}
+.tag.done{background:var(--ok-soft);color:var(--ok)}
+.item img{display:block;max-width:100%;border:1px solid var(--line);border-radius:4px;background:#fff}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chip{border:1.5px solid var(--line);background:var(--chip);color:var(--ink);border-radius:6px;padding:3px 10px;font-size:.85rem}
+.chip.sel{background:var(--mark);border-color:var(--mark);color:#fff}
+.empty{color:var(--sub);font-size:.9rem;padding:8px 0}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.sheets{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:12px}
+.sheets figure{margin:0;font-size:.8rem;color:var(--sub)}
+.sheets button{padding:0;border:0;background:none;display:block;width:100%}
+.sheets img{width:100%;border:1px solid var(--line);border-radius:4px;background:#fff}
+details{margin-top:14px;font-size:.88rem;color:var(--sub)}
+details label{display:flex;gap:10px;align-items:center;margin-top:6px;flex-wrap:wrap}
+textarea{width:100%;height:120px;font:12px/1.4 ui-monospace,monospace;margin-top:10px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px}
+.fails{display:grid;gap:14px;margin-top:12px}
+.fail{display:grid;grid-template-columns:110px 1fr;gap:14px;align-items:start;border:1px solid var(--mark);border-radius:8px;padding:12px;background:var(--mark-soft)}
+.fail img{width:110px;border:1px solid var(--line);background:#fff}
+.fail p{margin:0 0 8px;font-size:.88rem}
+.fixer{margin-top:12px;border:1px solid var(--line);border-radius:8px;padding:12px;background:var(--bg)}
+.fixer .steps{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;font-size:.85rem}
+.fixer .steps span{padding:2px 10px;border-radius:10px;border:1px solid var(--line);color:var(--sub)}
+.fixer .steps span.now{border-color:var(--mark);color:var(--mark);font-weight:700}
+.fixer .steps span.done{border-color:var(--ok);color:var(--ok)}
+.fixer canvas{display:block;max-width:100%;cursor:crosshair;border:1px solid var(--line);background:#fff;touch-action:manipulation}
+.prompt{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:10px}
+.ph{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg);font-size:.9rem}
+.ph button{padding:3px 12px;font-size:.82rem}
+.prompt pre{margin:0;padding:12px 14px;font-family:var(--font);font-size:13px;line-height:1.65;white-space:pre-wrap;max-height:240px;overflow:auto}
+ol.how{margin:0;padding-left:1.3em;color:var(--sub);font-size:.9rem}
+@media (max-width:560px){section{padding:18px 14px}.row{grid-template-columns:96px 1fr 36px}.fail{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<main>
+<header>
+  <div class="logo" aria-hidden="true"><i></i><i class="f"></i><i></i><i class="f"></i><i></i><i></i></div>
+  <div><h1>紫熊祭2026 アンケート 読み取りツール</h1>
+  <p>映画研究部 上映アンケート（用紙 SQ26-上映 v2）用。スキャンしたPDFを読み込むと、選択式を自動で判定し、自由記述欄を切り出します。データはこのブラウザの中だけで処理されます。</p></div>
+</header>
+
+<section>
+  <h2><span class="n">1</span>スキャンしたファイルを読み込む</h2>
+  <p class="lead">PDF（複数ページ可）または画像（JPG・PNG）。複数ファイルはファイル名順に並べ、通し番号を回答者番号にします。</p>
+  <label class="drop" id="drop" tabindex="0">
+    <strong>ここにドロップ、またはクリックして選択</strong>
+    <span>推奨：300dpi・グレースケール・A4。上下逆・多少の傾き・印刷の抜けは自動で補正します。</span>
+    <input type="file" id="file" multiple accept="application/pdf,image/*">
+  </label>
+  <div class="prog" id="prog" hidden><div></div></div>
+  <div class="status" id="status">まだファイルが読み込まれていません。</div>
+  <div id="failBox" hidden>
+    <h3>自動で読み取れなかった用紙</h3>
+    <p class="lead">四隅の黒い四角が見つからなかった用紙です。「手動で合わせる」を押し、画像の四隅の黒い四角を順番にクリックすると判定できます。</p>
+    <div class="fails" id="fails"></div>
+  </div>
+</section>
+
+<section id="sumSec" hidden>
+  <h2><span class="n">2</span>集計結果</h2>
+  <div class="stats" id="stats"></div>
+  <div class="filter" id="filter" role="group" aria-label="作品で絞り込み"></div>
+  <div id="summary"></div>
+  <details><summary>判定の感度を調整する</summary>
+    <label for="fillT">塗りつぶしと判定する割合 <input type="range" id="fillT" min="0.25" max="0.7" step="0.01" value="0.42"><span id="fillV">42%</span></label>
+    <label for="faintT">「薄いマーク」として確認に回す割合 <input type="range" id="faintT" min="0.05" max="0.3" step="0.01" value="0.12"><span id="faintV">12%</span></label>
+  </details>
+</section>
+
+<section id="revSec" hidden>
+  <h2><span class="n">3</span>要確認の回答をチェック</h2>
+  <p class="lead">複数マーク・薄いマーク・無回答の箇所です。画像を見て正しい選択肢を押すと確定します（複数選択の設問はもう一度押すと解除）。</p>
+  <div id="review"></div>
+</section>
+
+<section id="outSec" hidden>
+  <h2><span class="n">4</span>書き出す</h2>
+  <p class="lead">選択式の結果はCSV（Excel・Googleスプレッドシートで開けます）。複数選択の設問は選択肢ごとに 1／0 の列になり、Q5は「2枚目以降」の用紙では空欄になります。</p>
+  <div class="actions"><button id="csvBtn">CSVを保存</button><button class="ghost" id="copyBtn">表をコピー（貼り付け用）</button></div>
+  <textarea id="tsv" hidden readonly aria-label="集計表"></textarea>
+
+  <h3>自由記述の切り出し画像</h3>
+  <p class="lead">回答者番号つきで10人分ずつ1枚にまとめています。画像を押すと保存できます。</p>
+  <div id="texts"></div>
+  <div class="actions"><button id="zipBtn">切り出し画像をすべてZIPで保存</button></div>
+
+  <h3>AIに読ませるときのプロンプト</h3>
+  <p class="lead">切り出し画像を5〜10枚ずつ添付し、下のプロンプトを貼り付けて送ります。出力はタブ区切りなので、Excelやスプレッドシートにそのまま貼り付けると列に分かれます。</p>
+  <div class="prompt"><div class="ph"><b>① 文字起こし用</b><button class="ghost cp" data-t="pr1">コピー</button></div><pre id="pr1">添付画像は紙アンケートの自由記述欄を切り出したものです。
+各段の左にある「No.〇」が回答者番号、その右の枠内が手書きの回答です。
+画像上部に設問番号（Q6・Q7）が書かれています。
+
+以下のルールで文字起こしし、表形式で出力してください。
+
+【出力形式】
+タブ区切りで「回答者番号」「設問」「回答」の3列。1行目は見出し。
+表以外の説明文は出力しない。
+
+【ルール】
+・書かれている内容をそのまま書き起こす（誤字の修正・要約・言い換えはしない）
+・改行は無視して1行につなげる
+・読めない文字は1文字ごとに「〓」、読めない部分が長い場合は［判読不能］とする
+・自信がない読み取りは、その語の後ろに（？）を付ける
+・枠が空欄の場合は「（無回答）」とする
+・二重線などで消されている文字は書き起こさない
+・回答者番号は画像に書かれた番号を使い、飛ばさずにすべての段を出力する</pre></div>
+  <p class="lead" style="margin-top:14px">全員分の文字起こしが終わったら、CSVの「作品名」列と組み合わせて、意見をまとめるときに使います。</p>
+  <div class="prompt"><div class="ph"><b>② 意見のグループ分け用</b><button class="ghost cp" data-t="pr2">コピー</button></div><pre id="pr2">以下は映画上映アンケートの自由記述の回答一覧です（回答者番号・作品名・設問・回答）。
+Q6は作品の感想・制作者へのメッセージ、Q7は「その他」の内容やご意見です。
+
+作品ごと・設問ごとに、似た内容の意見をグループに分けてください。
+各グループについて「テーマ名」「件数」「代表的な回答（原文のまま2〜3件、回答者番号付き）」を示してください。
+件数の多い順に並べ、どのグループにも入らない少数意見は最後に「その他」としてまとめてください。
+回答の内容を誇張したり、書かれていない意見を補ったりしないでください。
+
+（ここに文字起こしした表を貼り付け）</pre></div>
+</section>
+
+<section>
+  <h2>使い方のメモ</h2>
+  <ol class="how">
+    <li>用紙は拡大・縮小せず「実際のサイズ（100%）」で印刷します。</li>
+    <li>回収した用紙はまとめてオートフィーダーでスキャンします（300dpi・グレースケール・片面、背景除去や白紙ページ除去はオフ）。</li>
+    <li>PDFをここに読み込み、読み取れなかった用紙と要確認の箇所だけ目で確認します。</li>
+    <li>CSVを保存し、自由記述の画像はAIに読み取らせて回答者番号で結合します。</li>
+  </ol>
+</section>
+</main>
+
+<script>
+/*CORE*/
+const SPEC = /*SPEC*/;
+const $ = id => document.getElementById(id);
+const choiceQs = SPEC.questions.filter(q => q.type !== "text");
+const textQs = SPEC.questions.filter(q => q.type === "text");
+const QD = Object.fromEntries(SPEC.questions.map(q => [q.id, q]));
+const FILMS = QD.Q1.options;
+let pages = [], fillT = 0.42, faintT = 0.12, film = 0, downloads = null;
+(async () => { try { if (window.claude && claude.use) downloads = await claude.use("downloads"); } catch (e) {} })();
+if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+function toGray(c) {
+  const { width: w, height: h, data } = c.getContext("2d").getImageData(0, 0, c.width, c.height), g = new Uint8Array(w * h);
+  for (let i = 0, j = 0; j < g.length; i += 4, j++) g[j] = (data[i] * 77 + data[i + 1] * 150 + data[i + 2] * 29) >> 8;
+  return { w, h, data: g };
+}
+function grayCanvas(g, scale = 1) {
+  const c = document.createElement("canvas"); c.width = g.w; c.height = g.h;
+  const ctx = c.getContext("2d"), id = ctx.createImageData(g.w, g.h);
+  for (let i = 0, j = 0; j < g.data.length; i += 4, j++) { const v = g.data[j]; id.data[i] = id.data[i + 1] = id.data[i + 2] = v; id.data[i + 3] = 255; }
+  ctx.putImageData(id, 0, 0);
+  if (scale === 1) return c;
+  const s = document.createElement("canvas"); s.width = Math.round(g.w * scale); s.height = Math.round(g.h * scale);
+  s.getContext("2d").drawImage(c, 0, 0, s.width, s.height); return s;
+}
+const TARGET = 1700; // 短辺のピクセル数（約200dpi相当）
+async function* sourcePages(files) {
+  for (const f of files) {
+    if (f.type === "application/pdf" || /\.pdf$/i.test(f.name)) {
+      if (!window.pdfjsLib) throw new Error("PDF読み込みライブラリを読み込めませんでした。ネット接続を確認して、ページを開き直してください。");
+      const pdf = await pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise;
+      for (let p = 1; p <= pdf.numPages; p++) {
+        const page = await pdf.getPage(p), v1 = page.getViewport({ scale: 1 });
+        const vp = page.getViewport({ scale: TARGET / Math.min(v1.width, v1.height) });
+        const c = document.createElement("canvas"); c.width = Math.round(vp.width); c.height = Math.round(vp.height);
+        const ctx = c.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+        await page.render({ canvasContext: ctx, viewport: vp }).promise;
+        yield { file: f.name, page: p, total: pdf.numPages, canvas: c };
+        page.cleanup();
+      }
+    } else {
+      const bmp = await createImageBitmap(f), s = Math.min(1, TARGET / Math.min(bmp.width, bmp.height));
+      const c = document.createElement("canvas"); c.width = Math.round(bmp.width * s); c.height = Math.round(bmp.height * s);
+      c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+      yield { file: f.name, page: 1, total: 1, canvas: c };
+    }
+  }
+}
+function portrait(c) {
+  if (c.width <= c.height) return c;
+  const r = document.createElement("canvas"); r.width = c.height; r.height = c.width;
+  const ctx = r.getContext("2d"); ctx.translate(r.width, 0); ctx.rotate(Math.PI / 2); ctx.drawImage(c, 0, 0); return r;
+}
+function attach(rec, g, r) {
+  rec.ok = true; rec.manual = !!r.manual; rec.flipped = r.flipped; rec.ratios = r.ratios; rec.crops = {};
+  for (const q of choiceQs) rec.crops[q.id] = OMR.crop(g, r.H, q.region, 3);
+  for (const q of textQs) rec.crops[q.id] = OMR.crop(g, r.H, q.region, 4);
+}
+async function handle(fileList) {
+  const files = [...fileList].sort((a, b) => a.name.localeCompare(b.name, "ja", { numeric: true }));
+  if (!files.length) return;
+  pages = []; sheetCache = {};
+  $("prog").hidden = false;
+  let n = 0;
+  try {
+    for await (const src of sourcePages(files)) {
+      n++;
+      $("status").textContent = `${n}枚目を処理中…（${src.file} ${src.page}/${src.total}ページ）`;
+      $("prog").firstElementChild.style.width = (src.page / src.total * 100) + "%";
+      const g = toGray(portrait(src.canvas));
+      const rec = { no: n, file: src.file, page: src.page, ok: false, ov: {} };
+      const r = OMR.analyze(g, SPEC);
+      if (r.ok) attach(rec, g, r); else { rec.reason = r.reason; rec.gray = g; }
+      pages.push(rec);
+      if (n % 3 === 0) await new Promise(res => setTimeout(res));
+    }
+  } catch (e) { $("status").textContent = "読み込みに失敗しました：" + e.message; $("prog").hidden = true; return; }
+  $("prog").hidden = true;
+  renderAll();
+}
+function statusLine() {
+  const ok = pages.filter(p => p.ok).length, man = pages.filter(p => p.manual).length, ng = pages.length - ok;
+  $("status").textContent = `${pages.length}枚を読み込みました。判定できた用紙 ${ok}枚` + (man ? `（うち手動で合わせた用紙 ${man}枚）` : "") + (ng ? `、まだ読み取れていない用紙 ${ng}枚` : "") + "。";
+}
+// ---- 判定結果（上書きと Q2→Q5 の分岐を反映）----
+function result(p, q) {
+  if (q.id === "Q5") {
+    const q2 = result(p, QD.Q2).value;
+    if (q2.length === 1 && q2[0] === 2) return { value: [], flags: [], fixed: false, skipped: true };
+  }
+  const c = OMR.classify(p.ratios[q.id], q, fillT, faintT);
+  if (p.ov[q.id]) return { value: p.ov[q.id], flags: c.flags, fixed: true };
+  return { value: c.marked, flags: c.flags, fixed: false };
+}
+const filmOf = p => { const v = result(p, QD.Q1).value; return v.length === 1 ? v[0] : 0; };
+const optLabel = o => `${o.n}. ${o.label}`;
+function renderAll() { statusLine(); renderFails(); if (pages.some(p => p.ok)) { renderSummary(); renderReview(); renderTexts(); } }
+
+// ---- 読み取れなかった用紙と手動補正 ----
+const thumbCache = new WeakMap();
+function thumbURL(p) { if (!thumbCache.has(p)) thumbCache.set(p, grayCanvas(p.gray, 220 / p.gray.w).toDataURL("image/jpeg", .7)); return thumbCache.get(p); }
+let fixing = null;
+function renderFails() {
+  const ng = pages.filter(p => !p.ok);
+  $("failBox").hidden = !ng.length;
+  $("fails").innerHTML = ng.map(p => `
+    <div class="fail" data-no="${p.no}">
+      <img src="${thumbURL(p)}" alt="No.${p.no}の用紙">
+      <div><p><b>No.${p.no}</b>（${esc(p.file)} ${p.page}ページ）<br>${esc(p.reason)}</p>
+      <button class="fixBtn">手動で合わせる</button><div class="fixHost"></div></div>
+    </div>`).join("");
+}
+$("fails").addEventListener("click", e => {
+  const b = e.target.closest(".fixBtn"); if (!b) return;
+  const p = pages.find(x => x.no === +b.closest(".fail").dataset.no);
+  openFixer(p, b.parentElement.querySelector(".fixHost"));
+});
+const CORNERS = ["左上", "右上", "左下", "右下"];
+function openFixer(p, host) {
+  const disp = Math.min(560, host.clientWidth || 560), sc = disp / p.gray.w;
+  host.innerHTML = `<div class="fixer"><div class="steps"></div><canvas aria-label="No.${p.no}の用紙画像"></canvas>
+    <div class="actions"><button class="ghost undo">1つ戻す</button><button class="ghost cancel">閉じる</button></div></div>`;
+  const cv = host.querySelector("canvas"), base = grayCanvas(p.gray, sc);
+  cv.width = base.width; cv.height = base.height;
+  fixing = { p, pts: [], sc, cv, base, host };
+  drawFixer();
+  cv.addEventListener("click", ev => {
+    const rect = cv.getBoundingClientRect();
+    const x = (ev.clientX - rect.left) * (cv.width / rect.width) / sc, y = (ev.clientY - rect.top) * (cv.height / rect.height) / sc;
+    fixing.pts.push(OMR.snap(p.gray, SPEC, x, y));
+    if (fixing.pts.length === 4) {
+      const r = OMR.analyzeAt(p.gray, SPEC, fixing.pts);
+      attach(p, p.gray, r); delete p.gray; fixing = null; renderAll();
+    } else drawFixer();
+  });
+  host.querySelector(".undo").addEventListener("click", () => { fixing.pts.pop(); drawFixer(); });
+  host.querySelector(".cancel").addEventListener("click", () => { host.innerHTML = ""; fixing = null; });
+}
+function drawFixer() {
+  const { cv, base, pts, sc, host } = fixing, ctx = cv.getContext("2d");
+  ctx.drawImage(base, 0, 0);
+  pts.forEach(([x, y], i) => {
+    ctx.strokeStyle = "#B8323C"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x * sc, y * sc, 9, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = "#B8323C"; ctx.font = "bold 12px sans-serif"; ctx.fillText(String(i + 1), x * sc + 11, y * sc - 6);
+  });
+  host.querySelector(".steps").innerHTML = CORNERS.map((c, i) => `<span class="${i < pts.length ? "done" : i === pts.length ? "now" : ""}">${i + 1} ${c}</span>`).join("") +
+    `<span style="border:0">の順に黒い四角をクリック（画像が上下逆でも、見たままの位置でOK）</span>`;
+}
+
+// ---- 集計 ----
+function renderSummary() {
+  const okPages = pages.filter(p => p.ok);
+  let open = 0, fixed = 0;
+  for (const p of okPages) for (const q of choiceQs) { const r = result(p, q); if (r.flags.length) r.fixed ? fixed++ : open++; }
+  const ng = pages.length - okPages.length;
+  $("sumSec").hidden = $("outSec").hidden = $("revSec").hidden = false;
+  $("stats").innerHTML = `<div><b>${okPages.length}</b>判定できた用紙</div>` +
+    `<div class="${ng ? "warn" : ""}"><b>${ng}</b>読み取れていない用紙</div>` +
+    `<div class="${open ? "warn" : ""}"><b>${open}</b>未確認の箇所</div><div><b>${fixed}</b>確認済み</div>`;
+  $("filter").innerHTML = [{ n: 0, label: "全作品" }, ...FILMS].map(o =>
+    `<button class="${film === o.n ? "" : "ghost"}" data-f="${o.n}" aria-pressed="${film === o.n}">${o.n ? optLabel(o) : o.label}（${o.n ? okPages.filter(p => filmOf(p) === o.n).length : okPages.length}）</button>`).join("");
+  const set = film ? okPages.filter(p => filmOf(p) === film) : okPages;
+  $("summary").innerHTML = choiceQs.map(q => {
+    let base = set, note = "";
+    if (q.id === "Q5") { base = set.filter(p => !result(p, q).skipped); note = `1枚目の用紙 ${base.length}枚のみ集計`; }
+    if (q.id === "Q1" && film) note = "作品で絞り込み中";
+    const counts = q.options.map(() => 0); let none = 0;
+    for (const p of base) { const v = result(p, q).value; if (!v.length) none++; v.forEach(n => counts[n - 1]++); }
+    const max = Math.max(1, ...counts);
+    return `<div class="q"><h4>${esc(q.label)}${note ? `<span class="note">${note}</span>` : ""}</h4>` + q.options.map((o, i) =>
+      `<div class="row"><span>${esc(optLabel(o))}</span><div class="track"><div style="width:${counts[i] / max * 100}%"></div></div><span class="c">${counts[i]}</span></div>`).join("") +
+      `<div class="row sub"><span>無回答</span><span></span><span class="c">${none}</span></div></div>`;
+  }).join("");
+}
+$("filter").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; film = +b.dataset.f; renderSummary(); });
+
+// ---- 要確認 ----
+const cropURL = new WeakMap();
+function urlOf(g) { if (!cropURL.has(g)) cropURL.set(g, grayCanvas(g).toDataURL("image/png")); return cropURL.get(g); }
+function renderReview() {
+  const items = [];
+  for (const p of pages) if (p.ok) for (const q of choiceQs) { const r = result(p, q); if (r.flags.length) items.push({ p, q, r }); }
+  if (!items.length) { $("review").innerHTML = `<p class="empty">確認が必要な箇所はありません。</p>`; return; }
+  $("review").innerHTML = items.map(({ p, q, r }) => `
+    <div class="item" data-no="${p.no}" data-q="${q.id}">
+      <div class="meta"><b>No.${p.no}</b><span>${esc(q.label)}</span>${p.manual ? `<span class="tag done">手動で合わせた用紙</span>` : ""}${r.flags.map(f => `<span class="tag">${esc(f)}</span>`).join("")}${r.fixed ? `<span class="tag done">確認済み：${r.value.join("・") || "無回答"}</span>` : ""}</div>
+      <img src="${urlOf(p.crops[q.id])}" alt="No.${p.no} ${esc(q.id)}の記入部分">
+      <div class="chips">${q.options.map(o => `<button class="chip ${r.value.includes(o.n) ? "sel" : ""}" data-n="${o.n}">${esc(optLabel(o))}</button>`).join("")}<button class="chip ${r.fixed && !r.value.length ? "sel" : ""}" data-n="0">無回答</button></div>
+    </div>`).join("");
+}
+$("review").addEventListener("click", e => {
+  const b = e.target.closest(".chip"); if (!b) return;
+  const it = b.closest(".item"), p = pages.find(x => x.no === +it.dataset.no), q = QD[it.dataset.q];
+  const n = +b.dataset.n, cur = result(p, q).value.slice();
+  p.ov[q.id] = n === 0 ? [] : q.type === "multi" ? (cur.includes(n) ? cur.filter(x => x !== n) : [...cur, n].sort((a, b) => a - b)) : [n];
+  const y = it.getBoundingClientRect().top;
+  sheetCache = {}; renderSummary(); renderReview(); renderTexts();
+  const again = document.querySelector(`.item[data-no="${p.no}"][data-q="${q.id}"]`);
+  if (again) window.scrollBy(0, again.getBoundingClientRect().top - y);
+});
+for (const [id, set] of [["fillT", v => fillT = v], ["faintT", v => faintT = v]]) {
+  $(id).addEventListener("input", e => { set(+e.target.value); $(id.replace("T", "V")).textContent = Math.round(e.target.value * 100) + "%"; if (pages.length) { renderSummary(); renderReview(); } });
+}
+
+// ---- CSV ----
+function table() {
+  const head = ["回答者番号", "ファイル", "ページ", "作品番号", "作品名", "Q2"];
+  for (const id of ["Q3", "Q4", "Q5"]) QD[id].options.forEach(o => head.push(`${id}_${o.n}_${o.label}`));
+  head.push("Q6", "Q7", "読み取り", "要確認");
+  const rows = [head];
+  for (const p of pages) {
+    const row = [p.no, p.file, p.page];
+    if (!p.ok) { while (row.length < head.length - 2) row.push(""); row.push("読み取り不可", ""); rows.push(row); continue; }
+    const notes = [];
+    for (const q of choiceQs) { const r = result(p, q); if (r.flags.length && !r.fixed) notes.push(`${q.id}:${r.flags.join("/")}`); }
+    const f = filmOf(p), q1 = result(p, QD.Q1).value, q2 = result(p, QD.Q2).value;
+    row.push(f || q1.join(";"), f ? FILMS[f - 1].label : "", q2.length === 1 ? q2[0] : q2.join(";"));
+    for (const id of ["Q3", "Q4", "Q5"]) { const r = result(p, QD[id]); QD[id].options.forEach(o => row.push(r.skipped ? "" : r.value.includes(o.n) ? 1 : 0)); }
+    row.push("", "", p.manual ? "手動" : "自動", notes.join(" "));
+    rows.push(row);
+  }
+  return rows;
+}
+async function saveFile(name, data) {
+  if (downloads) { try { await downloads.save({ filename: name, data }); } catch (e) {} return; }
+  const blob = data instanceof Blob ? data : new Blob([data], { type: "text/csv" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+const csvCell = v => { const s = String(v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+$("csvBtn").addEventListener("click", () => saveFile("上映アンケート集計.csv", "﻿" + table().map(r => r.map(csvCell).join(",")).join("\r\n")));
+$("copyBtn").addEventListener("click", async () => {
+  const tsv = table().map(r => r.join("\t")).join("\n");
+  try { await navigator.clipboard.writeText(tsv); $("copyBtn").textContent = "コピーしました"; setTimeout(() => $("copyBtn").textContent = "表をコピー（貼り付け用）", 1800); }
+  catch (e) { const t = $("tsv"); t.hidden = false; t.value = tsv; t.focus(); t.select(); }
+});
+
+// ---- 自由記述の切り出し（Q6・Q7を縦に並べる）----
+let sheetCache = {};
+const PER = 10;
+function buildSheets(qid) {
+  if (sheetCache[qid]) return sheetCache[qid];
+  const list = pages.filter(p => p.ok), out = [];
+  for (let i = 0; i < list.length; i += PER) {
+    const chunk = list.slice(i, i + PER), cw = chunk[0].crops[qid].w, ch = chunk[0].crops[qid].h;
+    const LW = 120, GAP = 10, c = document.createElement("canvas");
+    c.width = LW + cw + 20; c.height = 60 + chunk.length * (ch + GAP);
+    const ctx = c.getContext("2d"); ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.fillStyle = "#000"; ctx.font = "bold 24px sans-serif"; ctx.fillText(`${qid}  ${QD[qid].label.replace(/^Q\d+\.\s*/, "")}`, 12, 38);
+    chunk.forEach((p, k) => {
+      const y = 60 + k * (ch + GAP);
+      ctx.fillStyle = "#000"; ctx.font = "bold 30px sans-serif"; ctx.fillText(`No.${p.no}`, 10, y + ch / 2 + 10);
+      ctx.drawImage(grayCanvas(p.crops[qid]), LW, y);
+      ctx.strokeStyle = "#888"; ctx.lineWidth = 2; ctx.strokeRect(LW, y, cw, ch);
+    });
+    const from = chunk[0].no, to = chunk[chunk.length - 1].no;
+    out.push({ name: `${qid}_No${String(from).padStart(3, "0")}-${String(to).padStart(3, "0")}.png`, url: c.toDataURL("image/png"), from, to });
+  }
+  return sheetCache[qid] = out;
+}
+function renderTexts() {
+  $("texts").innerHTML = textQs.map(q => {
+    const s = buildSheets(q.id);
+    return `<h4 style="margin:16px 0 0;font-size:.95rem">${esc(q.label)}</h4><div class="sheets">` +
+      (s.length ? s.map((x, i) => `<figure><button data-q="${q.id}" data-i="${i}" title="押すと保存"><img src="${x.url}" alt="${x.name}"></button><figcaption>No.${x.from}〜${x.to}</figcaption></figure>`).join("") : `<p class="empty">切り出せる用紙がありません。</p>`) + `</div>`;
+  }).join("");
+}
+$("texts").addEventListener("click", async e => {
+  const b = e.target.closest("button[data-q]"); if (!b) return;
+  const x = buildSheets(b.dataset.q)[+b.dataset.i];
+  await saveFile(x.name, await (await fetch(x.url)).blob());
+});
+$("zipBtn").addEventListener("click", async () => {
+  if (!window.JSZip) { $("status").textContent = "ZIPを作るライブラリを読み込めませんでした。画像を1枚ずつ保存してください。"; return; }
+  const zip = new JSZip();
+  for (const q of textQs) for (const x of buildSheets(q.id)) zip.file(x.name, x.url.split(",")[1], { base64: true });
+  await saveFile("自由記述_切り出し.zip", await zip.generateAsync({ type: "blob" }));
+});
+document.querySelectorAll(".cp").forEach(b => b.addEventListener("click", async () => {
+  const el = $(b.dataset.t);
+  try { await navigator.clipboard.writeText(el.textContent); b.textContent = "コピーしました"; }
+  catch (e) { const r = document.createRange(); r.selectNodeContents(el); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); b.textContent = "選択しました（Ctrl+C）"; }
+  setTimeout(() => b.textContent = "コピー", 1800);
+}));
+
+// ---- ファイル入力 ----
+const drop = $("drop");
+$("file").addEventListener("change", e => handle(e.target.files));
+drop.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("file").click(); } });
+["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("on"); }));
+["dragleave", "drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("on"); }));
+drop.addEventListener("drop", e => handle(e.dataTransfer.files));
+</script>
