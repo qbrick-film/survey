@@ -4,7 +4,7 @@
 - 映画研究部の上映アンケート（用紙 `SQ26-上映 v2`）を、マークシート方式で機械的に読み取るツール。AIは自由記述の文字起こしにだけ使う。
 - 用紙：`dist/紫熊祭2026_上映アンケート.pdf`（確定版。□・記述欄・四隅マークの位置は変更禁止）
 - ツール：`dist/index.html`（GitHub Pages用・完全なHTML）、`dist/artifact.html`（claude.ai Artifact用）。どちらもブラウザ内で完結し、スキャンデータは外部送信しない。
-- 公開先：claude.ai https://claude.ai/artifact/TLktS6EwWTxBo39fz1SgoJ ／ GitHub Pages https://qbrick-film.github.io/survey/ （リポジトリ qbrick-film/survey、main に push すると自動で公開）
+- 公開先：GitHub Pages https://qbrick-film.github.io/survey/ （リポジトリ qbrick-film/survey、main に push すると自動で公開）
 
 ## 設問
 Q1 作品（単一5択：アネミー／お腹で金魚を飼う話／あいにいく／トキオさん／えーちゃんの引っ越し）
