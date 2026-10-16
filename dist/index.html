@@ -195,7 +195,7 @@ Q6は作品の感想・制作者へのメッセージ、Q7は「その他」の�
     <li>CSVを保存し、自由記述の画像はAIに読み取らせて回答者番号で結合します。</li>
   </ol>
 </section>
-<footer class="ver"><p>バージョン 2.1.0（2026-10-17 00:00 更新）</p><details><summary>変更履歴</summary><dl><dt>2.1.0　2026-10-17 00:00</dt><dd>ページの下にバージョンと変更履歴を表示</dd><dt>2.0.1　2026-10-16 23:54</dt><dd>文字起こし用プロンプト：回答者番号を数字だけにし、回答者番号→設問の順に並べるようにした（CSVと結合できるように）</dd><dt>2.0.0　2026-10-16 23:29</dt><dd>GitHub Pages で公開。試し刷りで分かった印刷の白い抜け・鉛筆の薄い塗り・スキャナーの線への対策と、四隅の手動補正を含む</dd></dl></details></footer>
+<footer class="ver"><p>バージョン 2.1.1（2026-10-17 00:52 更新）</p><details><summary>変更履歴</summary><dl><dt>2.1.1　2026-10-17 00:52</dt><dd>要確認の「薄いマーク: 2」が件数と紛らわしかったので、選択肢の名前で表示（例：薄いマーク：2. お腹で金魚を飼う話）。CSVの要確認列は「薄いマーク:選択肢2」の形に。「確認済み」も選択肢の名前で表示</dd><dt>2.1.0　2026-10-17 00:00</dt><dd>ページの下にバージョンと変更履歴を表示</dd><dt>2.0.1　2026-10-16 23:54</dt><dd>文字起こし用プロンプト：回答者番号を数字だけにし、回答者番号→設問の順に並べるようにした（CSVと結合できるように）</dd><dt>2.0.0　2026-10-16 23:29</dt><dd>GitHub Pages で公開。試し刷りで分かった印刷の白い抜け・鉛筆の薄い塗り・スキャナーの線への対策と、四隅の手動補正を含む</dd></dl></details></footer>
 </main>
 
 <script>
@@ -344,7 +344,7 @@ const OMR = (() => {
     const marked = ratios.map((r, i) => r >= fillT ? i + 1 : 0).filter(Boolean);
     const faint = ratios.map((r, i) => r >= faintT && r < fillT ? i + 1 : 0).filter(Boolean);
     const flags = [];
-    if (faint.length) flags.push("薄いマーク: " + faint.join(","));
+    if (faint.length) flags.push("薄いマーク");  // どの選択肢かは faint を見る
     if (q.type !== "multi" && marked.length > 1) flags.push("複数マーク");
     if (q.type !== "multi" && marked.length === 0 && !faint.length) flags.push("無回答");
     return { marked, faint, flags };
@@ -488,12 +488,16 @@ function statusLine() {
 function result(p, q) {
   if (q.id === "Q5") {
     const q2 = result(p, QD.Q2).value;
-    if (q2.length === 1 && q2[0] === 2) return { value: [], flags: [], fixed: false, skipped: true };
+    if (q2.length === 1 && q2[0] === 2) return { value: [], flags: [], faint: [], fixed: false, skipped: true };
   }
   const c = OMR.classify(p.ratios[q.id], q, fillT, faintT);
-  if (p.ov[q.id]) return { value: p.ov[q.id], flags: c.flags, fixed: true };
-  return { value: c.marked, flags: c.flags, fixed: false };
+  if (p.ov[q.id]) return { value: p.ov[q.id], flags: c.flags, faint: c.faint, fixed: true };
+  return { value: c.marked, flags: c.flags, faint: c.faint, fixed: false };
 }
+// 「薄いマーク」は画面では選択肢の名前、CSVでは「選択肢2」の形で、どれが薄いかを添える
+const optOf = (q, n) => q.options.find(o => o.n === n);
+const flagText = (f, r, q) => f === "薄いマーク" ? `薄いマーク：${r.faint.map(n => optLabel(optOf(q, n))).join("、")}` : f;
+const flagCSV = (f, r) => f === "薄いマーク" ? `薄いマーク:選択肢${r.faint.join(",")}` : f;
 const filmOf = p => { const v = result(p, QD.Q1).value; return v.length === 1 ? v[0] : 0; };
 const optLabel = o => `${o.n}. ${o.label}`;
 function renderAll() { statusLine(); renderFails(); if (pages.some(p => p.ok)) { renderSummary(); renderReview(); renderTexts(); } }
@@ -585,7 +589,7 @@ function renderReview() {
   if (!items.length) { $("review").innerHTML = `<p class="empty">確認が必要な箇所はありません。</p>`; return; }
   $("review").innerHTML = items.map(({ p, q, r }) => `
     <div class="item" data-no="${p.no}" data-q="${q.id}">
-      <div class="meta"><b>No.${p.no}</b><span>${esc(q.label)}</span>${p.manual ? `<span class="tag done">手動で合わせた用紙</span>` : ""}${r.flags.map(f => `<span class="tag">${esc(f)}</span>`).join("")}${r.fixed ? `<span class="tag done">確認済み：${r.value.join("・") || "無回答"}</span>` : ""}</div>
+      <div class="meta"><b>No.${p.no}</b><span>${esc(q.label)}</span>${p.manual ? `<span class="tag done">手動で合わせた用紙</span>` : ""}${r.flags.map(f => `<span class="tag">${esc(flagText(f, r, q))}</span>`).join("")}${r.fixed ? `<span class="tag done">確認済み：${esc(r.value.map(n => optLabel(optOf(q, n))).join("、") || "無回答")}</span>` : ""}</div>
       <img src="${urlOf(p.crops[q.id])}" alt="No.${p.no} ${esc(q.id)}の記入部分">
       <div class="chips">${q.options.map(o => `<button class="chip ${r.value.includes(o.n) ? "sel" : ""}" data-n="${o.n}">${esc(optLabel(o))}</button>`).join("")}<button class="chip ${r.fixed && !r.value.length ? "sel" : ""}" data-n="0">無回答</button></div>
     </div>`).join("");
@@ -614,7 +618,7 @@ function table() {
     const row = [p.no, p.file, p.page];
     if (!p.ok) { while (row.length < head.length - 2) row.push(""); row.push("読み取り不可", ""); rows.push(row); continue; }
     const notes = [];
-    for (const q of choiceQs) { const r = result(p, q); if (r.flags.length && !r.fixed) notes.push(`${q.id}:${r.flags.join("/")}`); }
+    for (const q of choiceQs) { const r = result(p, q); if (r.flags.length && !r.fixed) notes.push(`${q.id}:${r.flags.map(f => flagCSV(f, r)).join("/")}`); }
     const f = filmOf(p), q1 = result(p, QD.Q1).value, q2 = result(p, QD.Q2).value;
     row.push(f || q1.join(";"), f ? FILMS[f - 1].label : "", q2.length === 1 ? q2[0] : q2.join(";"));
     for (const id of ["Q3", "Q4", "Q5"]) { const r = result(p, QD[id]); QD[id].options.forEach(o => row.push(r.skipped ? "" : r.value.includes(o.n) ? 1 : 0)); }

@@ -143,7 +143,7 @@ const OMR = (() => {
     const marked = ratios.map((r, i) => r >= fillT ? i + 1 : 0).filter(Boolean);
     const faint = ratios.map((r, i) => r >= faintT && r < fillT ? i + 1 : 0).filter(Boolean);
     const flags = [];
-    if (faint.length) flags.push("薄いマーク: " + faint.join(","));
+    if (faint.length) flags.push("薄いマーク");  // どの選択肢かは faint を見る
     if (q.type !== "multi" && marked.length > 1) flags.push("複数マーク");
     if (q.type !== "multi" && marked.length === 0 && !faint.length) flags.push("無回答");
     return { marked, faint, flags };
