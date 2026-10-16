@@ -23,7 +23,7 @@
 - `src/gen.py`：用紙PDFと `src/layout.json`（座標定義）を作る。□・記述欄・四隅マークの位置は印刷済みの用紙と合わせるため変更しない
 - `src/core.js`：判定ロジック（Node でテストできる純粋関数）
 - `src/app.html`：画面
-- `python3 build.py`：`dist/index.html`（GitHub Pages 用）と `dist/artifact.html`（claude.ai 用）を作る
+- `python3 build.py`：`dist/index.html`（GitHub Pages 用）を作る
 
 `src/` を変えたら `python3 build.py` を実行し、`dist/` も一緒にコミットします。
 main に push すると GitHub Pages に公開されます（組み立て直した結果が `dist/` と違うと止まります）。
