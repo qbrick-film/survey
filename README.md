@@ -25,7 +25,8 @@
 - `src/app.html`：画面
 - `python3 build.py`：`dist/index.html`（GitHub Pages 用）を作る
 
-`src/` を変えたら `python3 build.py` を実行し、`dist/` も一緒にコミットします。
+`src/` を変えたら、`src/changes.json` の先頭にバージョン・日時・変更内容を1件足してから `python3 build.py` を実行し、`dist/` も一緒にコミットします。
+ページの下に最新のバージョンと日時、「変更履歴」に全件が表示されます。
 main に push すると GitHub Pages に公開されます（組み立て直した結果が `dist/` と違うと止まります）。
 
 テストは実スキャンを使うため、画像はリポジトリに入れていません（`tests/img/` に置いて使う）。

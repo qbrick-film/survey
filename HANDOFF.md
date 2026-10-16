@@ -25,7 +25,8 @@ Q6 感想・メッセージ／Q7 「その他」の内容・ご意見（自由�
 ## ファイル
 - `src/gen.py` 用紙PDFと `src/layout.json`（座標定義）を生成
 - `src/core.js` 判定ロジック（純粋関数、Nodeでテスト可）
-- `src/app.html` 画面（`/*CORE*/` `/*SPEC*/` を build.py が埋め込む）
+- `src/app.html` 画面（`/*CORE*/` `/*SPEC*/` `<!--CHANGES-->` を build.py が埋め込む）
+- `src/changes.json` バージョンと変更履歴（先頭が最新）。ページ下部に表示。変更のたびに先頭へ1件足す
 - `build.py` → `dist/index.html`
 - `tests/t.js` Nodeで判定テスト（PGM画像）／`tests/mk.py` 悪条件画像の生成／`tests/pw.py` Playwrightで画面の総合テスト
 

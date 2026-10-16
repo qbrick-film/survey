@@ -1,9 +1,17 @@
 """src を結合して dist/index.html（GitHub Pages 用）を作る"""
-import pathlib
+import html, json, pathlib
 root = pathlib.Path(__file__).parent
 s = (root/"src/app.html").read_text(encoding="utf-8")
 core = (root/"src/core.js").read_text(encoding="utf-8").replace('if (typeof module !== "undefined") module.exports = OMR;', '')
 s = s.replace("/*CORE*/", core).replace("/*SPEC*/", (root/"src/layout.json").read_text(encoding="utf-8").strip())
+# ページ下部のバージョンと変更履歴（src/changes.json の先頭が最新）
+changes = json.loads((root/"src/changes.json").read_text(encoding="utf-8"))
+e = html.escape
+ver = (f'<footer class="ver"><p>バージョン {e(changes[0]["version"])}（{e(changes[0]["date"])} 更新）</p>'
+       '<details><summary>変更履歴</summary><dl>'
+       + "".join(f'<dt>{e(c["version"])}　{e(c["date"])}</dt><dd>{e(c["text"])}</dd>' for c in changes)
+       + '</dl></details></footer>')
+s = s.replace("<!--CHANGES-->", ver)
 (root/"dist").mkdir(exist_ok=True)
 full = ('<!doctype html><html lang="ja"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
